@@ -1,0 +1,212 @@
+{% extends 'base.html' %}
+
+{% block content %}
+        <div class="row">
+        {% if user.is_authenticated %}
+        <div class="col-md-12">
+            <b>Hello - {{ user.get_full_name }}</b>
+            (<a href="{% url 'auth:logout' %}?next={{ request.path }}"
+                   class="">Выйти</a>)
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="row">
+        <div class="col-md-12" id="form_origin">
+            <form>
+            <div class="form-group">
+                <div class="col-md-10">
+                    <textarea id="message_text" class="form-control" placeholder="Enter your message"></textarea>
+                </div>
+                <div class="col-md-2">
+                    {% if user.is_authenticated %}
+                    <a href="#" id="post_message" class="btn btn-primary">Submit</a>
+                    {% else %}
+                    <a href="#" data-toggle="tooltip" data-placement="top" title="Please, login to create messages" class="disabled" disabled>Submit</a>
+                    {% endif %}
+                    <button type="button" class="btn btn-danger m-t-2" id="cancel_btn" style="display: none;">Cancel</button>
+                </div>
+            </div>
+            </form>
+        </div>
+
+    </div>
+    <div class="row">
+    <div class="container m-t-3">
+        <div class="card">
+            <div class="card-body">
+            {% load mptt_tags %}
+            <div class="treeview">
+                <ul id="core_ul">
+                    {% recursetree nodes %}
+                        <li id="message-li_{{ node.id }}">
+                            <div class="row">
+                                <span class="date">({{ node.time }})</span>
+                                <span class="text">{{ node.text }}</span>
+                                {% if user.is_authenticated %}
+                                <a class="comment" data-comment="{{ node.id }}">Answer</a>
+                                {% if user.id == node.author.id %}
+                                <a class="edit fa fa-edit" data-comment="{{ node.id }}" data-parent="{{ node.parent.id }}"></a>
+                                <a onclick="delete_message({{ node.id }})" id="rm-message_{{ node.id }}" class="delete_message rm fa fa-remove" href="#"></a>
+                                {% endif %}
+                                {% endif %}
+                            </div>
+                            {% if not node.is_leaf_node %}
+                                <ul class="children">
+                                    {{ children }}
+                                </ul>
+                            {% endif %}
+                        </li>
+                    {% endrecursetree %}
+                </ul>
+            </div>
+            </div>
+        </div>
+    </div>
+    </div>
+
+    <script>
+    var parent_id = null;
+
+    $('#update_message').click(function () {
+        $.ajax({
+            type: "PATCH",
+            url: "{% url 'data:message-list' %}" + message_id,
+            data: { text: $('#message_text').val() },
+            beforeSend: function(xhr, settings) {
+                xhr.setRequestHeader("X-CSRFToken", "{{ csrf_token }}");
+            },
+            success: function(response) {
+                console.log('successfully updated');
+                console.log(response);
+            }
+        });
+    });
+
+    $('#post_message').click(function(){
+        console.log('in post');
+        var options = {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            timezone: 'UTC',
+            hour: 'numeric',
+            minute: 'numeric'
+        };
+        var current_time = new Date().toLocaleDateString("en-US", options).slice(0, -3) + " p.m.";
+
+        if (parent_id === null) {
+            $.ajax({
+                type: "POST",
+                url: "{% url 'data:message-list' %}",
+                dataType: "json",
+                data: { text: $('#message_text').val() },
+                beforeSend: function(xhr) {
+                    xhr.setRequestHeader("X-CSRFToken", "{{ csrf_token }}");
+                },
+                success: function(response) {
+                    $('#core_ul').append($(
+                        "<li id='message-li_" + response.id + "'> \
+                            <div class='row'> \
+                                <span class='date'>(" + current_time + ")</span> \
+                                <span class='text'>" + response.text + "</span> \
+                                <a class='comment' data-comment='" + response.id + "'>Answer</a> \
+                                <a class='edit fa fa-edit' data-comment='" + response.id + "' data-parent=''></a> \
+                                <a onclick='delete_message(" + response.id + ")' id='rm-message_" + response.id + "' class='delete_message rm fa fa-remove' href='#'></a> \
+                            </div> \
+                        </li>")
+                    );
+                }
+            });
+        } else {
+            $.ajax({
+                type: "POST",
+                url: "{% url 'data:message-list' %}",
+                dataType: "json",
+                data: {
+                    text: $('#message_text').val(),
+                    parent_id: parent_id
+                },
+                beforeSend: function(xhr) {
+                    xhr.setRequestHeader("X-CSRFToken", "{{ csrf_token }}");
+                },
+                success: function(response) {
+                    $('#message-li_' + parent_id).append($(
+                        "<ul class='children'> \
+                            <li id='message-li_" + response.id + "'> \
+                                <div class='row'> \
+                                    <span class='date'>(" + current_time + ")</span> \
+                                    <span class='text'>" + response.text + "</span> \
+                                    <a class='comment' data-comment='" + parent_id + "'>Answer</a> \
+                                    <a class='edit fa fa-edit' data-comment='" + parent_id + "'></a> \
+                                    <a onclick='delete_message(" + response.id + " )' id='rm-message_" + response.id + "' class='delete_message rm fa fa-remove' href='#'></a> \
+                                </div> \
+                            </li> \
+                        </ul>"
+                    ));
+                    var form = $('form');
+                    form.attr('action', 'add_comment/');
+                    $('#form_origin').append(form);
+                    $('#message_text').val('');
+                    parent_id = null;
+                    $("#cancel_btn").hide();
+                }
+            });
+        }
+    });
+
+    function delete_message(message_id) {
+        $.ajax({
+            type: "DELETE",
+            url: "{% url 'data:message-list' %}" + message_id,
+            data: { id: message_id },
+            beforeSend: function(xhr, settings) {
+                xhr.setRequestHeader("X-CSRFToken", "{{ csrf_token }}");
+            },
+            success: function(response) {
+                $('#message-li_' + message_id).remove();
+            }
+        });
+    }
+
+    $('#cancel_btn').click(function () {
+        var form = $('form');
+        form.attr('action', 'add_comment/');
+        $('#form_origin').append(form);
+        $('#message_text').val('');
+        parent_id = null;
+        $('#post_message').attr("id", 'update_message');
+        $("#cancel_btn").hide();
+    });
+
+    $('.fa-edit').click(function () {
+        var form = $('form');
+        form.attr('action', 'edit_comment/');
+        $(this).parent().append(form);
+        var text = $(this).parent().children('.text').html();
+        form.find('textarea').val(text);
+        var comment_id = $(this).data('comment');
+        parent_id = $(this).closest('li').attr('id').match(/\d+$/)[0];;
+        form.find('[name="id"]').attr('value', comment_id);
+        form.find('[name="parent"]').attr('value', parent_id);
+        $('#cancel_btn').show();
+        $('#post_message').prop("id", 'update_message');
+        console.log('id changed');
+    });
+
+    $('.comment').click(function () {
+        var form = $('form');
+        form.attr('action', 'add_comment/');
+        form.find('textarea').val('');
+        parent_id = $(this).closest('li').attr('id').match(/\d+$/)[0];
+        $(this).parent().append(form);
+        var comment_id = $(this).data('comment');
+        form.find('[name="parent"]').attr('value', comment_id);
+        $('#cancel_btn').show();
+    });
+
+    $(document).ready(function(){
+        $('[data-toggle="tooltip"]').tooltip();
+    });
+    </script>
+{% endblock %}

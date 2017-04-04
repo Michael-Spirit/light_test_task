@@ -1,0 +1,10 @@
+Django==1.10.6
+ipython==4.2.0
+djangorestframework==3.5.3
+django-allauth==0.30.0
+django-rest-swagger==2.1.1
+django-rest-auth==0.9.0
+python-social-auth==0.2.21
+django-mptt==0.8.7
+factory-boy==2.8.1
+flake8

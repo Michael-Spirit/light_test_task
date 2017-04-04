@@ -1,0 +1,102 @@
+body {
+  padding-top: 50px;
+}
+
+textarea {
+    resize: none;
+}
+
+a:not([href]):not([tabindex]) {
+    color: dodgerblue;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+a:not([href]):not([tabindex]):hover {
+    text-decoration: underline;
+}
+
+a:not([href]):not([tabindex]).edit {
+    color: #bc9c43;
+    text-decoration: none;
+}
+
+a.rm {
+    color: #a94442;
+    text-decoration: none;
+}
+
+div.card:first-child {
+    margin-top:20px;
+}
+
+div.treeview {
+    min-width: 100px;
+    min-height: 100px;
+
+    /*max-height: 256px;*/
+    /*overflow:auto;*/
+
+	padding: 4px;
+
+	margin-bottom: 20px;
+
+	color: #369;
+
+	border: solid 1px;
+	border-radius: 4px;
+}
+div.treeview ul:first-child:before {
+    display: none;
+}
+.treeview, .treeview ul {
+    margin:0;
+    padding:0;
+    list-style:none;
+}
+.treeview ul {
+    margin-left:1em;
+    position:relative;
+}
+.treeview ul ul {
+    margin-left:2em;
+}
+.treeview ul:before {
+    content:"";
+    display:block;
+    width:0;
+    position:absolute;
+    top:0;
+    left:0;
+
+    /* creates a more theme-ready standard for the bootstrap themes */
+    bottom:15px;
+}
+.treeview li {
+    margin:0;
+    padding:0 1em;
+    line-height:2em;
+    position:relative;
+}
+.treeview ul li:before {
+    content:"";
+    display:block;
+    width:10px;
+    height:0;
+    margin-top:-1px;
+    position:absolute;
+    top:1em;
+    left:0;
+}
+.tree-indicator {
+    margin-right:5px;
+
+    cursor:pointer;
+}
+.date {
+    color: gray;
+}
+.text {
+    color: black;
+    font-weight: 500;
+}

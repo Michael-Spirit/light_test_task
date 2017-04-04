@@ -1,0 +1,8 @@
+*.py[cod]
+*.pyc
+__pycache__
+*.log
+.idea
+node_modules/
+.env
+*.sqlite3
